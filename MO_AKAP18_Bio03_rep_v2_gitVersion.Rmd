@@ -1,25 +1,11 @@
 ---
 title: "Smith et.al. 2018 PNAS 115 (49) E11465-E11474"
-output: html_document
-    
+output: github_document
 ---
-
 
 Data analysis for TurboID samples from Scott Lab. AKAP18 mutants: P, a nuclear retention mutant that stop translocation from nuclear to cytoplasm; and a NLS that stay in the cytoplasm, were fused to TurboID. The fusion proteins were overexpressed in in vitro cultured cells in the present of biotin for proximal labeling of possible interacting proteins. TurboID was also overexpressed as control. 
 
-For biological replicates, there are 3 control samples, 4 nls smaples and 4 p
-samples. 
-
-
-
-# old notes 
-New sample, a set of 3. I may have to drop one set of samples from the rep2 because it is significantly different based on the previous analysis. Will see.
-
-For MQ, match between runs was enabled and fraction was added to experimental design. The fractions were separated based on the "bait", so that different samples were not match, e.g. F1 for ctrl, F5 for NLS and F9 for P mutant
-
-
-Update, 09.18.2018
-Mitch said John want to have a full volcano plot with NLS on the one side and p on the other side. Go down to see the updated code.
+For biological replicates, there are 3 control samples, 4 nls smaples and 4 p samples. 
 
 ```{r packages require for this analysis, message=FALSE}
 library(tidyverse)
