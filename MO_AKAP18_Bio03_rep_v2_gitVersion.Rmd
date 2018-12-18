@@ -1,6 +1,9 @@
 ---
 title: "Smith et.al. 2018 PNAS 115 (49) E11465-E11474"
-output: github_document
+output: 
+  html_document:
+    keep_md: TRUE
+    code_folding: hide
 ---
 
 Data analysis for TurboID samples from Scott Lab. AKAP18 mutants: P, a nuclear retention mutant that stop translocation from nuclear to cytoplasm; and a NLS that stay in the cytoplasm, were fused to TurboID. The fusion proteins were overexpressed in in vitro cultured cells in the present of biotin for proximal labeling of possible interacting proteins. TurboID was also overexpressed as control. 
@@ -20,15 +23,13 @@ library(ggrepel)
 library(VennDiagram)
 ```
 
-Read the data .txt select the columns required for this analysis and filter the contaminations. 
+Before analyzing the result, I need to tidy up the data, i.e., select the columns needed for the analysis, filter the contaminations (unwanted proteins). 
 ```{r data import, echo=FALSE}
 rm(list=ls(all=TRUE))
 raw.PG <- read.delim("../proteinGroups.txt", header = TRUE, stringsAsFactors = FALSE)
 ```
-
-The table contains `r dim(raw.PG)`, rows and columns, respectively. Most of the columns are not required for the differential protein quantification, so I will remove them. Then there are three columns containing the contamination information. These columns are combined to filter out contaminations, then the columns can also be removed because they will not be used again.  
-
-```{r}
+The table contains `r dim(raw.PG)`, rows and columns, respectively. Only the columns containing gene names, protein expression, and contaminations are required. There are three columns containing the contamination information. They can be combined to filter out contaminations, then the columns can also be removed because they will not be used again.  
+```{r, warning=FALSE}
 clean.PG <- raw.PG %>% 
   dplyr::select(Protein.names, 
                 Gene.names, 
@@ -45,8 +46,8 @@ clean.PG <- raw.PG %>%
   dplyr::select(-con)
 ```
 
-For the analysis, I will need to log transform the data, check the distribution and normalize. Normalization will be done using Z-scores transformation. I will also check the number of quantified proteins in each sample.
-```{r check the data}
+For the analysis, I need to log transform the data, check the distribution and normalize. Normalization is done using Z-scores transformation.
+```{r check the data, message=FALSE, warning=FALSE}
 LFQ <- clean.PG %>% dplyr::select(starts_with("LFQ"))  # extract the numeric columns
 # log transform
 log.LFQ <- apply(LFQ, 2, log2)
@@ -68,30 +69,28 @@ ggplot(log.LFQ.ridge) +
 log.LFQ <- apply(log.LFQ, 2, scale, center = TRUE, scale = TRUE)
 log.LFQ <- data.frame(log.LFQ, stringsAsFactors = FALSE)
 
-# check distribution
+# check distribution after transformation
 log.LFQ.ridge <- log.LFQ %>% gather(key = "Samples", value = "Log2.LFQ")
 ggplot(log.LFQ.ridge) +
   geom_density_ridges(mapping = aes(x = Log2.LFQ, y = Samples)) + 
   xlab("Normalized LFQ")
+```
+
+Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed taht p.2 has a low number that the other replicates. So I will exclude it for further analysis. 
+```{r check reproducibility}
 # check how well the replicates are
 pairs(log.LFQ, pch = ".")
 # check the number of quantified proteins for each sample
 apply(log.LFQ, 2, function(x) sum(!is.na(x)))
 
-```
-
-Based on the scatterplots, reproducibility is not bad. The controls look significantly different, but this is expected. The table result showed that p.2 has much less quantified proteins. So I will exclude it for further analysis. 
-
-Then I will count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream.
-
-I will also impute the missing value with a random number from a distribution with mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold. 
-
-```{r}
+# remove p.2
 log.LFQ$p.2 <- NULL
 ```
 
-```{r counting NAs}
+I count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream. The missing values are imputed using a random number drawn from a distribution with mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold. 
 
+```{r counting NAs}
+# Counting NAs
 sample.names <- c("ctrl", "nls", "p")
 
 count.NAs <- function(x) {
@@ -117,6 +116,7 @@ NA.counts <- Reduce(x = NA.counts,
 ```
 
 ```{r imputation}
+# Imputation of missing values
 # because it is z-score transformated, so the mean will be 0 and sd will be 1
 data.size <- dim(log.LFQ)
 # make the random distribution of values for imputation. Downshift 2 and sd = 0.1
@@ -132,10 +132,9 @@ log.LFQ.imputed <- data.frame(apply(log.LFQ, 2,
 colnames(log.LFQ.imputed) <- str_c("Imputed.", names(log.LFQ.imputed))
 ```
 
-Then to identified the specific interacting partner of the P- and NLS- mutants, a t-test will be perform to compare the mutants to the control sample. 
-
+t-test is used to identify the proteins that are significantly enriched by the fusion proteins (P or NLS) compared to the control. The p-values are adjusted using "fdr" method after removing rows with too many missing values. Results are visualized using volcano plots and venn diagram. 
 ```{r auto t-test}
-# write an automated function, in case more samples are added in the future
+# write an automated function for t-test, in case more samples are added in the future
 
 # the sample names
 treatment <- c("nls", 
@@ -194,7 +193,6 @@ colnames(ttest.results) <- c("Ctrl.means", "p.means", "p.differences", "p.pvalue
                              "nls.means", "nls.differences", "nls.pvalues")
 ```
 
-Finally, the proteins with high missing values from the mutants are removed. P-values are adjusted using the FDR method. And the results are visualized using volcano plots and Venn diagram. Which final figure will be used is depending on the collaborator. Table containing the results will also be exported.
 ```{r combine the data and subset into nls and p}
 # tidy up the resulting data from the t-test
 p.data <- cbind(clean.PG[,c(2,3)], ttest.results[, c(2:4)], NA.counts)
@@ -279,7 +277,7 @@ nls.plot2 <- ggplot() +
 nls.plot2
 ```
 
-```{r manual venn diagram}
+```{r manual venn diagram, message=FALSE}
 
 library(VennDiagram)
 
@@ -294,8 +292,8 @@ venn <- draw.pairwise.venn(57 + 24, 40 + 24, 24,
 venn
 ```
 
+Head(output.table)
 ```{r table output}
-
 output <- NULL
 output <- cbind(clean.PG[, 1:3], ttest.results[, 1:4])
 output <- left_join(output, p.data[, c(2,9)], by = "Fasta.headers")
