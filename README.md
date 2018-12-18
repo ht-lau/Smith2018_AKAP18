@@ -24,6 +24,7 @@ library(ggrepel)
 library(VennDiagram)
 ```
 </p></details>
+
 Before analyzing the result, I need to tidy up the data, i.e., select the columns needed for the analysis, filter the contaminations (unwanted proteins). 
 
 The table contains 2494, 138, rows and columns, respectively. Only the columns containing gene names, protein expression, and contaminations are required. There are three columns containing the contamination information. They can be combined to filter out contaminations, then the columns can also be removed because they will not be used again.  
