@@ -1,11 +1,13 @@
-Smith et.al. 2018 PNAS 115 (49) E11465-E11474
-================
+---
+title: "Smith et.al. 2018 PNAS 115 (49) E11465-E11474"
+output: github_document
+---
 
-Data analysis for TurboID samples from Scott Lab. AKAP18 mutants: P, a nuclear retention mutant that stop translocation from nuclear to cytoplasm; and a NLS that stay in the cytoplasm, were fused to TurboID. The fusion proteins were overexpressed in in vitro cultured cells in the present of biotin for proximal labeling of possible interacting proteins. TurboID was also overexpressed as control.
+Data analysis for TurboID samples from Scott Lab. AKAP18 mutants: P, a nuclear retention mutant that stop translocation from nuclear to cytoplasm; and a NLS that stay in the cytoplasm, were fused to TurboID. The fusion proteins were overexpressed in in vitro cultured cells in the present of biotin for proximal labeling of possible interacting proteins. TurboID was also overexpressed as control. 
 
-For biological replicates, there are 3 control samples, 4 nls smaples and 4 p samples.
+For biological replicates, there are 3 control samples, 4 nls smaples and 4 p samples. 
 
-``` r
+```{r, message=FALSE}
 library(tidyverse)
 library(stringr)
 library(ggthemes)
@@ -17,12 +19,11 @@ library(ggrepel)
 # for Venn diagram
 library(VennDiagram)
 ```
+Before analyzing the result, I need to tidy up the data, i.e., select the columns needed for the analysis, filter the contaminations (unwanted proteins). 
 
-Before analyzing the result, I need to tidy up the data, i.e., select the columns needed for the analysis, filter the contaminations (unwanted proteins).
+The table contains 2494, 138, rows and columns, respectively. Only the columns containing gene names, protein expression, and contaminations are required. There are three columns containing the contamination information. They can be combined to filter out contaminations, then the columns can also be removed because they will not be used again.  
 
-The table contains 2494, 138, rows and columns, respectively. Only the columns containing gene names, protein expression, and contaminations are required. There are three columns containing the contamination information. They can be combined to filter out contaminations, then the columns can also be removed because they will not be used again.
-
-``` r
+```{r}
 raw.PG <- read.delim("../../proteinGroups.txt", header = TRUE, stringsAsFactors = FALSE)
 
 clean.PG <- raw.PG %>% 
@@ -43,7 +44,7 @@ clean.PG <- raw.PG %>%
 
 For the analysis, I need to log transform the data, check the distribution and normalize. Normalization is done using Z-scores transformation.
 
-``` r
+```{r}
 LFQ <- clean.PG %>% dplyr::select(starts_with("LFQ"))  # extract the numeric columns
 # log transform
 log.LFQ <- apply(LFQ, 2, log2)
@@ -61,14 +62,7 @@ ggplot(log.LFQ.ridge) +
   geom_density_ridges(mapping = aes(x = Log2.LFQ, y = Samples))
 ```
 
-    ## Picking joint bandwidth of 0.703
-
-    ## Warning: Removed 19312 rows containing non-finite values
-    ## (stat_density_ridges).
-
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-3-1.png)
-
-``` r
+```{r}
 # Normalization, I have also tried to compared the peak shape between z-score and MAD normalization,
 # but i don't see any obvious difference between the two method, so just do z-scores 
 log.LFQ <- apply(log.LFQ, 2, scale, center = TRUE, scale = TRUE)
@@ -81,40 +75,23 @@ ggplot(log.LFQ.ridge) +
   xlab("Normalized LFQ")
 ```
 
-    ## Picking joint bandwidth of 0.24
+Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed taht p.2 has a low number that the other replicates. So I will exclude it for further analysis. 
 
-    ## Warning: Removed 19312 rows containing non-finite values
-    ## (stat_density_ridges).
-
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-4-1.png)
-
-Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed taht p.2 has a low number that the other replicates. So I will exclude it for further analysis.
-
-``` r
+```{r}
 # check how well the replicates are
 pairs(log.LFQ, pch = ".")
-```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-5-1.png)
-
-``` r
 # check the number of quantified proteins for each sample
 apply(log.LFQ, 2, function(x) sum(!is.na(x)))
-```
 
-    ## ctrl.1 ctrl.3 ctrl.8  nls.1  nls.2  nls.3  nls.8    p.1    p.2    p.3 
-    ##    212    520    162    782    503    937    936    702    320   1087 
-    ##    p.8 
-    ##    718
-
-``` r
 # remove p.2
 log.LFQ$p.2 <- NULL
 ```
 
-I count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream. The missing values are imputed using a random number drawn from a distribution with mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold.
+I count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream. The missing values are imputed using a random number drawn from a distribution with mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold. 
 
-``` r
+
+```{r}
 # Counting NAs
 sample.names <- c("ctrl", "nls", "p")
 
@@ -140,7 +117,8 @@ NA.counts <- Reduce(x = NA.counts,
                     f = function(x,y) cbind(x,y))
 ```
 
-``` r
+
+```{r}
 # Imputation of missing values
 # because it is z-score transformated, so the mean will be 0 and sd will be 1
 data.size <- dim(log.LFQ)
@@ -157,9 +135,9 @@ log.LFQ.imputed <- data.frame(apply(log.LFQ, 2,
 colnames(log.LFQ.imputed) <- str_c("Imputed.", names(log.LFQ.imputed))
 ```
 
-t-test is used to identify the proteins that are significantly enriched by the fusion proteins (P or NLS) compared to the control. The p-values are adjusted using "fdr" method after removing rows with too many missing values. Results are visualized using volcano plots and venn diagram.
+t-test is used to identify the proteins that are significantly enriched by the fusion proteins (P or NLS) compared to the control. The p-values are adjusted using "fdr" method after removing rows with too many missing values. Results are visualized using volcano plots and venn diagram. 
 
-``` r
+```{r}
 # write an automated function for t-test, in case more samples are added in the future
 
 # the sample names
@@ -219,7 +197,8 @@ colnames(ttest.results) <- c("Ctrl.means", "p.means", "p.differences", "p.pvalue
                              "nls.means", "nls.differences", "nls.pvalues")
 ```
 
-``` r
+
+```{r}
 # tidy up the resulting data from the t-test
 p.data <- cbind(clean.PG[,c(2,3)], ttest.results[, c(2:4)], NA.counts)
 p.data <- p.data[p.data$p.percent.NAs < 0.6, ]
@@ -230,7 +209,8 @@ nls.data <- nls.data[nls.data$nls.percent.NAs < 0.6, ]
 nls.data$nls.adjust.p <- p.adjust(nls.data$nls.pvalues)
 ```
 
-``` r
+
+```{r}
 # find 0.05 fdr for each
 p.05 <- p.data[p.data$p.adjust.p > 0.05,]
 p.05 <- min(p.05$p.pvalues)
@@ -260,9 +240,7 @@ both.plot <- ggplot() +
 both.plot
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-10-1.png)
-
-``` r
+```{r}
 # i want to see whether I can plot both data into 1 plot
 p.plot <- ggplot() +
   # p mutant, below fdr
@@ -279,9 +257,8 @@ p.plot <- ggplot() +
 p.plot
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-11-1.png)
 
-``` r
+```{r}
 nls.plot <- ggplot() +
   # nls mutant, below fdr
   geom_point(data = nls.data[nls.data$nls.pvalues > nls.05,],
@@ -311,35 +288,28 @@ nls.plot2 <- ggplot() +
 nls.plot2
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-12-1.png)
-
-``` r
+```{r}
 venn <- draw.pairwise.venn(57 + 24, 40 + 24, 24,
                            fill = c("blue", "red"),
                            alpha = c(0.5, 0.5), 
                            category = c("NLS", "P"))
-```
-
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-13-1.png)
-
-``` r
 venn
 ```
 
-    ## (polygon[GRID.polygon.384], polygon[GRID.polygon.385], polygon[GRID.polygon.386], polygon[GRID.polygon.387], text[GRID.text.388], text[GRID.text.389], text[GRID.text.390], text[GRID.text.391], text[GRID.text.392])
-
-``` r
+```r
 #pdf(file = "fdr_05.pdf")
 #grid.draw(venn)
 #dev.off()
 venn
 ```
 
-    ## (polygon[GRID.polygon.384], polygon[GRID.polygon.385], polygon[GRID.polygon.386], polygon[GRID.polygon.387], text[GRID.text.388], text[GRID.text.389], text[GRID.text.390], text[GRID.text.391], text[GRID.text.392])
+```
+## (polygon[GRID.polygon.384], polygon[GRID.polygon.385], polygon[GRID.polygon.386], polygon[GRID.polygon.387], text[GRID.text.388], text[GRID.text.389], text[GRID.text.390], text[GRID.text.391], text[GRID.text.392])
+```
 
 Head(output.table)
 
-``` r
+```r
 output <- NULL
 output <- cbind(clean.PG[, 1:3], ttest.results[, 1:4])
 output <- left_join(output, p.data[, c(2,9)], by = "Fasta.headers")
