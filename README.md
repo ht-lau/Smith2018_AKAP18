@@ -65,7 +65,7 @@ ggplot(log.LFQ.ridge) +
   geom_density_ridges(mapping = aes(x = Log2.LFQ, y = Samples))
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/check the data-1.png)<!-- -->
+![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/checkthedata-1.png)<!-- -->
 
 ```r
 # Normalization, I have also tried to compared the peak shape between z-score and MAD normalization,
@@ -80,7 +80,7 @@ ggplot(log.LFQ.ridge) +
   xlab("Normalized LFQ")
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/check the data-2.png)<!-- -->
+![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/checkthedata-2.png)<!-- -->
 
 Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed taht p.2 has a low number that the other replicates. So I will exclude it for further analysis. 
 
@@ -89,7 +89,7 @@ Based on the following scatterplots, reproducibility is not bad. The controls lo
 pairs(log.LFQ, pch = ".")
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/check reproducibility-1.png)<!-- -->
+![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/checkreproducibility-1.png)<!-- -->
 
 ```r
 # check the number of quantified proteins for each sample
@@ -323,7 +323,7 @@ venn <- draw.pairwise.venn(57 + 24, 40 + 24, 24,
                            category = c("NLS", "P"))
 ```
 
-![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/manual venn diagram-1.png)<!-- -->
+![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-html/manualvenndiagram-1.png)<!-- -->
 
 ```r
 #pdf(file = "fdr_05.pdf")
