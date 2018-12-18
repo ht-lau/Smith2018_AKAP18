@@ -10,7 +10,7 @@ Data analysis for TurboID samples from Scott Lab. AKAP18 mutants: P, a nuclear r
 
 For biological replicates, there are 3 control samples, 4 nls smaples and 4 p samples. 
 
-
+<details><summary>
 ```r
 library(tidyverse)
 library(stringr)
@@ -23,7 +23,7 @@ library(ggrepel)
 # for Venn diagram
 library(VennDiagram)
 ```
-
+</summary></p></details>
 Before analyzing the result, I need to tidy up the data, i.e., select the columns needed for the analysis, filter the contaminations (unwanted proteins). 
 
 The table contains 2494, 138, rows and columns, respectively. Only the columns containing gene names, protein expression, and contaminations are required. There are three columns containing the contamination information. They can be combined to filter out contaminations, then the columns can also be removed because they will not be used again.  
