@@ -88,7 +88,7 @@ ggplot(log.LFQ.ridge) +
 
 ![](MO_AKAP18_Bio03_rep_v2_gitVersion_files/figure-markdown_github/unnamed-chunk-4-1.png)
 
-Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed taht p.2 has a low number that the other replicates. So I will exclude it for further analysis.
+Based on the following scatterplots, reproducibility is not bad. The controls look significantly different from the fusion proteins, which is expected. Counting the number of quantified proteins per experiment revealed that p.2 has a low number that the other replicates. So I will exclude it for further analysis.
 
 ``` r
 # check how well the replicates are
@@ -112,7 +112,7 @@ apply(log.LFQ, 2, function(x) sum(!is.na(x)))
 log.LFQ$p.2 <- NULL
 ```
 
-I count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream. The missing values are imputed using a random number drawn from a distribution with mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold.
+I count the missing data per gene for each treatment, i.e., control, P- and NLS- mutants. This will impact the filtering and p-value adjustment downstream. The missing values are imputed using a random number drawn from a distribution with a mean at -2 and 0.1 s.d. This assumes that the missing data is due to the signal being under the machine detection threshold.
 
 ``` r
 # Counting NAs
@@ -157,7 +157,7 @@ log.LFQ.imputed <- data.frame(apply(log.LFQ, 2,
 colnames(log.LFQ.imputed) <- str_c("Imputed.", names(log.LFQ.imputed))
 ```
 
-t-test is used to identify the proteins that are significantly enriched by the fusion proteins (P or NLS) compared to the control. The p-values are adjusted using "fdr" method after removing rows with too many missing values. Results are visualized using volcano plots and venn diagram.
+t-test is used to identify the proteins that are significantly enriched by the fusion proteins (P or NLS) compared to the control. The p-values are adjusted using "fdr" method after removing rows with too many missing values. Results are visualized using volcano plots and Venn diagram.
 
 ``` r
 # write an automated function for t-test, in case more samples are added in the future
